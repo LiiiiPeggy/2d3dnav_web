@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#071019">
+  <title>Nav2 全流程控制台</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="rotateOverlay" class="rotate-overlay">
+    <div class="phone-icon">↻</div>
+    <strong>请将手机横屏</strong>
+    <span>横屏可显示完整地图和控制面板</span>
+  </div>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">N2</div>
+        <div>
+          <h1>Nav2 全流程控制台</h1>
+          <p>无 RViz · 建图 → 重定位 → 轨迹规划</p>
+        </div>
+      </div>
+      <div class="health-row">
+        <div id="wsHealth" class="health-pill pending"><i></i><span>Web 连接中</span></div>
+        <div class="workflow-rail" aria-label="Nav2 工作流程">
+          <div id="stageMapping" class="workflow-step"><b>1</b><span>建图</span></div>
+          <i></i>
+          <div id="stageLocalization" class="workflow-step"><b>2</b><span>重定位</span></div>
+          <i></i>
+          <div id="stagePlanning" class="workflow-step"><b>3</b><span>轨迹规划</span></div>
+        </div>
+      </div>
+      <div id="clock" class="clock">--:--:--</div>
+    </header>
+
+    <main class="workspace">
+      <section class="map-panel">
+        <canvas id="mapCanvas"></canvas>
+        <div id="mapEmpty" class="map-empty">
+          <div class="radar-ring"><i></i></div>
+          <strong>等待 /map</strong>
+          <span>地图出现后会自动适配视图</span>
+        </div>
+
+        <div class="map-tools primary-tools">
+          <button class="tool-button active" data-mode="view" aria-label="浏览地图">
+            <span>✥</span><b>浏览</b>
+          </button>
+          <button class="tool-button" data-mode="goal" aria-label="设置导航目标" disabled>
+            <span>⌖</span><b>导航目标</b>
+          </button>
+          <button class="tool-button warning" data-mode="initial" aria-label="设置初始位置" disabled>
+            <span>◎</span><b>初始位置</b>
+          </button>
+        </div>
+
+        <div class="map-tools overlay-tools">
+          <button id="toggleScan" class="overlay-button active" aria-pressed="true">激光匹配点</button>
+          <button id="toggleParticles" class="overlay-button active" aria-pressed="true">定位粒子</button>
+          <button id="toggleGlobalCostmap" class="overlay-button costmap-toggle" aria-pressed="false">全局膨胀</button>
+          <button id="toggleLocalCostmap" class="overlay-button costmap-toggle active" aria-pressed="true">局部膨胀</button>
+          <button id="toggleGlobalPath" class="overlay-button global-path-toggle active" aria-pressed="true">全局路径</button>
+          <button id="toggleMppiTrajectories" class="overlay-button mppi-toggle active" aria-pressed="true">MPPI 轨迹</button>
+        </div>
+
+        <div class="map-tools zoom-tools">
+          <button id="zoomIn" class="icon-button" aria-label="放大">＋</button>
+          <button id="zoomOut" class="icon-button" aria-label="缩小">−</button>
+          <button id="fitMap" class="icon-button small-text" aria-label="适配地图">适配</button>
+          <button id="centerRobot" class="icon-button small-text" aria-label="居中机器人">居中</button>
+          <button id="toggleMapSize" class="icon-button small-text map-size-button"
+            aria-label="最大化地图" aria-pressed="false">大地图</button>
+        </div>
+
+        <div id="pointerReadout" class="pointer-readout">x -- · y --</div>
+        <div class="legend">
+          <span><i class="robot-dot"></i>机器狗</span>
+          <span><i class="trail-line"></i>建图轨迹</span>
+          <span><i class="scan-dot"></i>激光匹配点</span>
+          <span><i class="particle-dot"></i>定位粒子</span>
+          <span><i class="inflation-box"></i>膨胀代价</span>
+          <span><i class="goal-dot"></i>目标</span>
+          <span><i class="path-line"></i>全局路径</span>
+          <span><i class="mppi-candidate-dot"></i>MPPI 候选</span>
+          <span><i class="mppi-optimal-line"></i>MPPI 最优</span>
+        </div>
+        <div id="interactionHint" class="interaction-hint">单指拖动地图，双指或按钮缩放</div>
+      </section>
+
+      <aside class="side-panel">
+        <section class="card workflow-card">
+          <div class="card-heading">
+            <span>当前流程</span>
+            <small id="workflowStage">等待启动</small>
+          </div>
+          <div id="workflowTitle" class="workflow-title">等待 ROS 流程</div>
+          <div id="workflowMessage" class="workflow-message">请先启动 SLAM 建图，或加载地图启动定位/Nav2</div>
+          <div class="localization-selector" role="radiogroup" aria-label="导航定位方法">
+            <button type="button" data-localizer="amcl" role="radio" aria-checked="false">
+              <strong>AMCL</strong>
+              <small>栅格粒子定位</small>
+              <em>当前运行</em>
+            </button>
+            <button type="button" data-localizer="cartographer" role="radio" aria-checked="false">
+              <strong>图 SLAM</strong>
+              <small>PBSTREAM 匹配</small>
+              <em>当前运行</em>
+            </button>
+          </div>
+          <div id="localizationSelectorHint" class="localization-selector-hint">
+            导航前选择定位方法；切换方法需要停止当前 launch
+          </div>
+          <div class="readiness-row">
+            <span id="slamReady">● SLAM</span>
+            <span id="scanReady">● 激光</span>
+            <span id="amclReady">● 定位器</span>
+            <span id="plannerReady">● 规划器</span>
+          </div>
+        </section>
+
+        <section id="launchCard" class="card launch-card">
+          <div class="card-heading">
+            <span>手机 Launch 控制</span>
+            <small id="launchState">正在读取状态</small>
+          </div>
+          <div class="launch-active-line">
+            <i id="launchStateDot"></i>
+            <div>
+              <strong id="launchActiveName">当前未启动流程</strong>
+              <small id="launchActiveDetail">Web Bridge 会保持独立运行</small>
+            </div>
+          </div>
+          <label class="launch-field">
+            <span>选择启动入口</span>
+            <select id="launchProfile" aria-label="选择 ROS Launch">
+              <option value="">等待启动器目录</option>
+            </select>
+          </label>
+          <div id="launchProfileDescription" class="launch-profile-description">
+            只能启动服务端白名单中的 launch，不接受任意命令。
+          </div>
+          <label id="launchMapRow" class="launch-field hidden">
+            <span>导航地图</span>
+            <select id="launchMap" aria-label="选择导航地图">
+              <option value="">maps 目录中没有 YAML 地图</option>
+            </select>
+          </label>
+          <div class="launch-actions">
+            <button id="launchStart" class="launch-start-button" disabled>启动所选流程</button>
+            <button id="launchStop" class="launch-stop-button" disabled>停止当前流程</button>
+            <button id="launchClearLogs" class="launch-clear-button">清空日志</button>
+          </div>
+          <div class="launch-log-heading">
+            <span>实时日志</span>
+            <small id="launchLogCount">0 行</small>
+          </div>
+          <pre id="launchLog" class="launch-log" tabindex="0">等待 Launch 输出…</pre>
+          <div id="launchSecurityHint" class="launch-security-hint">
+            仅限可信局域网；停止操作会向整个受管 ROS 进程组发送信号。
+          </div>
+        </section>
+
+        <section class="card match-card">
+          <div class="card-heading">
+            <span>重定位匹配</span>
+            <small id="matchState">等待定位初始位置</small>
+          </div>
+          <canvas id="localScanCanvas" width="320" height="118"></canvas>
+          <div class="match-stats">
+            <div><label>局部激光点</label><strong id="scanPointCount">0</strong></div>
+            <div><label>定位粒子</label><strong id="particleCount">0</strong></div>
+            <div><label>粒子扩散</label><strong id="particleSpread">--</strong><em>m</em></div>
+          </div>
+          <div class="frame-tree">
+            <div><span>全局地图</span><strong id="globalFrame">map</strong></div>
+            <div><span>局部代价地图</span><strong id="localFrame">odom</strong></div>
+            <div><span>机器人</span><strong id="baseFrame">base_link</strong></div>
+            <div><span>雷达原始点</span><strong id="scanFrame">base_scan</strong></div>
+            <div><span>定位参考</span><strong id="particleFrame">map</strong></div>
+          </div>
+          <div id="matchHint" class="match-hint">红色激光端点与黑色地图墙体越重合，重定位越准确</div>
+          <div class="localization-actions">
+            <button id="clearVisualization" class="clear-button">清除旧显示</button>
+            <button id="resetLocalization" class="reset-button" disabled>重置定位</button>
+          </div>
+          <div id="resetHint" class="reset-hint">先清除显示判断是否为网页缓存；仍错位再重置定位</div>
+        </section>
+
+        <section class="card inflation-card">
+          <div class="card-heading">
+            <span>膨胀层调参</span>
+            <small id="inflationState">等待 Costmap 参数服务</small>
+          </div>
+          <div class="inflation-columns">
+            <div class="inflation-scope" data-scope="global">
+              <div class="scope-title"><strong>全局</strong><span>map</span></div>
+              <label class="switch-line">
+                <span>启用膨胀层</span><input id="globalEnabled" type="checkbox">
+              </label>
+              <label>
+                <span>膨胀半径</span>
+                <div><input id="globalRadius" type="number" min="0" max="10" step="0.05"><em>m</em></div>
+              </label>
+              <label>
+                <span>代价衰减系数</span>
+                <div><input id="globalScaling" type="number" min="0.01" max="100" step="0.1"></div>
+              </label>
+              <label class="switch-line">
+                <span>膨胀未知区</span><input id="globalInflateUnknown" type="checkbox">
+              </label>
+              <label class="switch-line">
+                <span>未知区周边膨胀</span><input id="globalInflateAroundUnknown" type="checkbox">
+              </label>
+              <button id="applyGlobalInflation" class="apply-button" disabled>应用全局参数</button>
+            </div>
+            <div class="inflation-scope" data-scope="local">
+              <div class="scope-title"><strong>局部</strong><span>odom</span></div>
+              <label class="switch-line">
+                <span>启用膨胀层</span><input id="localEnabled" type="checkbox">
+              </label>
+              <label>
+                <span>膨胀半径</span>
+                <div><input id="localRadius" type="number" min="0" max="10" step="0.05"><em>m</em></div>
+              </label>
+              <label>
+                <span>代价衰减系数</span>
+                <div><input id="localScaling" type="number" min="0.01" max="100" step="0.1"></div>
+              </label>
+              <label class="switch-line">
+                <span>膨胀未知区</span><input id="localInflateUnknown" type="checkbox">
+              </label>
+              <label class="switch-line">
+                <span>未知区周边膨胀</span><input id="localInflateAroundUnknown" type="checkbox">
+              </label>
+              <button id="applyLocalInflation" class="apply-button" disabled>应用局部参数</button>
+            </div>
+          </div>
+          <div id="inflationHint" class="inflation-hint">半径越大离障碍越远；衰减系数越大，代价下降越快</div>
+        </section>
+
+        <section class="card mapping-card">
+          <div class="card-heading">
+            <span>建图质量</span>
+            <small id="mappingState">未开始</small>
+          </div>
+          <div class="mapping-summary">
+            <div id="mappingScore" class="quality-score"><strong>--</strong><span>健康度</span></div>
+            <div>
+              <strong id="mappingAdvice">等待 SLAM Toolbox</strong>
+              <span>启发式评估，最终请检查墙体重影、断裂和闭环偏差</span>
+            </div>
+          </div>
+          <div class="quality-grid">
+            <div><label>已知面积</label><strong id="knownArea">--</strong><em>m²</em></div>
+            <div><label>网格已知占比</label><strong id="knownRatio">--</strong><em>%</em></div>
+            <div><label>地图稳定度</label><strong id="mapStability">--</strong><em>%</em></div>
+            <div><label>激光有效点</label><strong id="scanValid">--</strong><em>%</em></div>
+          </div>
+          <div class="mapping-detail">
+            <span id="mapFreshness">地图尚未更新</span>
+            <span id="mapGrowth">增量 --</span>
+            <span id="mapUpdates">更新 0 次</span>
+          </div>
+          <div class="mapping-checks">
+            <span id="checkSlam">● SLAM</span>
+            <span id="checkScan">● 激光</span>
+            <span id="checkTf">● TF</span>
+            <span id="checkMap">● 地图流</span>
+          </div>
+          <div class="save-map-row">
+            <input id="mapName" maxlength="64" value="gazebo_map" aria-label="地图名称">
+            <button id="saveMap" class="save-button" disabled>保存地图</button>
+          </div>
+          <div id="saveMapHint" class="save-map-hint">等待 /map_saver/save_map</div>
+        </section>
+
+        <section class="card pose-card">
+          <div class="card-heading">
+            <span>地图位置</span>
+            <small>map → base_link</small>
+          </div>
+          <div class="pose-grid">
+            <div><label>X</label><strong id="poseX">--</strong><em>m</em></div>
+            <div><label>Y</label><strong id="poseY">--</strong><em>m</em></div>
+            <div><label>朝向</label><strong id="poseYaw">--</strong><em>°</em></div>
+          </div>
+        </section>
+
+        <section class="card velocity-card">
+          <div class="card-heading">
+            <span>实时 /cmd_vel</span>
+            <small id="cmdTopic">底层接收话题</small>
+          </div>
+          <div class="velocity-grid">
+            <div class="velocity-item x-axis">
+              <label>前后</label><strong id="cmdVx">0.000</strong><em>m/s</em>
+              <div class="meter"><i id="meterVx"></i></div>
+            </div>
+            <div class="velocity-item y-axis">
+              <label>横向</label><strong id="cmdVy">0.000</strong><em>m/s</em>
+              <div class="meter"><i id="meterVy"></i></div>
+            </div>
+            <div class="velocity-item z-axis">
+              <label>旋转</label><strong id="cmdWz">0.000</strong><em>rad/s</em>
+              <div class="meter"><i id="meterWz"></i></div>
+            </div>
+          </div>
+          <div id="cmdAge" class="freshness">尚未收到速度</div>
+        </section>
+
+        <section class="card nav-card">
+          <div class="card-heading">
+            <span>导航任务</span>
+            <small id="navStateText">空闲</small>
+          </div>
+          <div id="navMessage" class="nav-message">等待地图目标</div>
+          <div class="nav-stats">
+            <div><label>剩余距离</label><strong id="distanceRemaining">--</strong><em>m</em></div>
+            <div><label>导航时间</label><strong id="navigationTime">--</strong><em>s</em></div>
+          </div>
+          <div class="goal-line">
+            <span>目标</span>
+            <strong id="goalPose">尚未设置</strong>
+          </div>
+          <button id="cancelNavigation" class="danger-button" disabled>
+            <span>■</span> 取消当前导航
+          </button>
+        </section>
+
+        <footer class="side-footer">
+          <span id="mapMeta">地图未加载</span>
+          <span id="frameMeta">map / base_link</span>
+        </footer>
+      </aside>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

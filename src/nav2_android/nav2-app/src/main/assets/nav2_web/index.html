@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#071018">
+  <title>planner</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">P</div>
+        <div><h1>planner</h1><p>SCAN-Planner 实机三维终端</p></div>
+      </div>
+      <nav class="mode-tabs" aria-label="主模式">
+        <button id="show3dView" class="active" data-screen="scene" type="button"><b>01</b> 三维监控</button>
+        <button data-screen="launch" type="button"><b>02</b> 系统启动</button>
+        <button data-screen="terminal" type="button"><b>03</b> 运行终端</button>
+      </nav>
+      <div class="top-status">
+        <span id="wsHealth" class="connection pending"><i></i><b>连接中</b></span>
+        <span id="clock" class="clock">--:--:--</span>
+      </div>
+    </header>
+
+    <main class="main-area">
+      <section id="sceneScreen" class="screen active scene-screen">
+        <canvas id="sceneCanvas" aria-label="SCAN-Planner 三维场景"></canvas>
+        <div id="sceneEmpty" class="scene-empty">
+          <div class="scan-icon"><i></i><i></i><i></i></div>
+          <strong>等待 FAST-LIO 三维数据</strong>
+          <span>可切换到“系统启动”先启动雷达或完整规划流程</span>
+        </div>
+
+        <div class="scene-toolbar">
+          <button id="sceneOrbit" class="active" type="button">360°视角</button>
+          <button id="scenePan" type="button">平移</button>
+          <button id="sceneTop" type="button">俯视</button>
+          <button id="sceneFollow" type="button">跟随</button>
+          <button id="sceneFit" type="button">适配</button>
+          <button id="sceneReset" class="reset-tool" type="button" title="清除手机端历史显示，不重置定位或停止规划">重置显示</button>
+          <button id="sceneGoal" class="goal-tool" type="button">点云目标</button>
+          <button id="sceneRoute" class="route-tool" type="button">点云路线</button>
+          <button id="sceneInitialPose" class="initial-pose-tool" type="button">粗定位</button>
+          <button id="sceneFullscreen" type="button">全屏</button>
+        </div>
+
+        <div id="sceneGestureHint" class="scene-gesture-hint">单指 360° 环绕 · 双指缩放和平移</div>
+
+        <section id="sceneGoalEditor" class="scene-goal-editor" aria-live="polite">
+          <div>
+            <small id="sceneGoalEditorTitle">SCAN-PLANNER / PCT GOAL · MAP</small>
+            <strong id="sceneGoalCoordinates">触摸点云以读取 x / y / z</strong>
+            <span id="sceneGoalHeight">点云地面 Z -- → 机身 Z --</span>
+            <span id="sceneGoalEditorHint">目标会吸附到当前模式允许选择的地图表面</span>
+          </div>
+          <button id="sceneGoalCancel" type="button">取消</button>
+          <button id="sceneGoalAdd" type="button">加入路线</button>
+          <button id="sceneGoalSend" type="button">发送单目标</button>
+        </section>
+
+        <section id="sceneRouteEditor" class="scene-route-editor" aria-live="polite">
+          <header>
+            <div><small>PCT WAYPOINT ROUTE</small><strong>全局有序途经点</strong></div>
+            <em id="sceneRouteHeight">仅选择 PCT 可通行网格</em>
+            <em id="sceneRouteCount">0 点</em>
+          </header>
+          <div id="sceneRouteList" class="scene-route-list"><span>切换“多点路线”，依次在地图上添加途经点</span></div>
+          <footer>
+            <button id="sceneRouteUndo" type="button">撤销末点</button>
+            <button id="sceneRouteClear" type="button">清空</button>
+            <button id="sceneRouteSend" class="primary" type="button">发送给 PCT</button>
+          </footer>
+        </section>
+
+        <section id="sceneLayers" class="scene-layer-panel">
+          <header><div><small>ROS DATA LAYERS</small><strong>手机显示数据</strong></div><button id="sceneLayerCollapse" type="button">−</button></header>
+          <div class="scene-layer-list">
+            <label data-layer-row="traversable"><input type="checkbox" data-scene-layer="traversable" checked><i></i><span>PCT 可通行区域<small>/pct/traversable · 默认选点层</small></span><em id="layerTraversable">等待</em></label>
+            <label data-layer-row="registered"><input type="checkbox" data-scene-layer="registered" checked><i></i><span>FAST-LIO 点云<small>/cloud_registered</small></span><em id="layerRegistered">等待</em></label>
+            <label data-layer-row="occupancy"><input type="checkbox" data-scene-layer="occupancy" checked><i></i><span>占据点云<small>/grid_map/occupancy</small></span><em id="layerOccupancy">等待</em></label>
+            <label data-layer-row="inflated"><input type="checkbox" data-scene-layer="inflated"><i></i><span>膨胀区域<small>/grid_map/occupancy_inflate</small></span><em id="layerInflated">等待</em></label>
+            <label data-layer-row="global_map"><input type="checkbox" data-scene-layer="global_map" checked><i></i><span>全局点云<small>/prior_map · PCT PCD</small></span><em id="layerGlobalMap">等待</em></label>
+            <label data-layer-row="planning"><input type="checkbox" data-scene-layer="planning" checked><i></i><span>轨迹与目标<small>Marker / Path</small></span><em id="layerPlanning">等待</em></label>
+            <label data-layer-row="robot"><input type="checkbox" data-scene-layer="robot" checked><i></i><span>机身与雷达位姿<small>base / livox_frame</small></span><em id="layerRobot">等待</em></label>
+            <label data-layer-row="tf"><input type="checkbox" data-scene-layer="tf"><i></i><span>TF 坐标轴<small>/tf + /tf_static</small></span><em id="layerTf">等待</em></label>
+          </div>
+        </section>
+
+        <div class="scene-readout">
+          <span id="sceneFixedFrame">Fixed: map</span>
+          <span><b id="scenePoints">0</b> pts</span>
+          <span><b id="sceneFps">0</b> fps</span>
+          <span id="sceneCamera">相机 --</span>
+        </div>
+
+        <aside class="pipeline-overlay">
+          <header><small>PHYSICAL PIPELINE</small><strong id="pipelineTitle">实机链路待机</strong></header>
+          <div class="pipeline-mini">
+            <div id="miniLidar"><i></i><span>Mid-360S</span><small>雷达 / IMU</small></div>
+            <b>›</b><div id="miniFastlio"><i></i><span>FAST-LIO</span><small>map 定位</small></div>
+            <b>›</b><div id="miniPlanning"><i></i><span>Planner</span><small>局部规划</small></div>
+            <b>›</b><div id="miniControl"><i></i><span>Control</span><small>/cmd_vel</small></div>
+          </div>
+          <button id="openLaunch" type="button">打开系统启动</button>
+        </aside>
+      </section>
+
+      <section id="launchScreen" class="screen launch-screen">
+        <div class="section-title">
+          <div><small>ROBOT BRINGUP</small><h2>实机启动模式</h2><p>每次只运行一个模式；后一个模式已包含前面的全部组件。</p></div>
+          <div id="launchStateBadge" class="state-badge idle"><i></i><span>未运行</span></div>
+        </div>
+
+        <div class="launch-layout">
+          <div class="pipeline-card">
+            <header><span>数据链路</span><small>map → base → livox_frame</small></header>
+            <div class="pipeline-vertical">
+              <div id="stageLidar" data-stage="lidar"><b>01</b><i></i><section><strong>Livox Mid-360S</strong><span>/livox/lidar · /livox/imu</span></section></div>
+              <div id="stageLocalization" data-stage="localization"><b>02</b><i></i><section><strong>FAST-LIO 定位</strong><span>/Odometry · /cloud_registered</span></section></div>
+              <div id="stagePlanning" data-stage="planning"><b>03</b><i></i><section><strong>SCAN-Planner</strong><span>/scan_planner/body_pose · /quad_0/path</span></section></div>
+              <div id="stageControl" data-stage="control"><b>04</b><i></i><section><strong>机器狗控制</strong><span>/cmd_vel · 闭环控制器</span></section></div>
+            </div>
+            <div class="bridge-note"><strong>常驻服务不会被停止</strong><span>planner_app.launch.py 负责 App 连接；停止按钮只停止当前受管实机流程。</span></div>
+          </div>
+
+          <div class="mode-card">
+            <header><div><small>SELECT MODE</small><strong>选择启动模式</strong></div><span id="profileCount">0 个模式</span></header>
+            <div id="profileList" class="profile-list"><div class="profile-placeholder">正在从机器人读取启动模式…</div></div>
+            <div id="selectedDescription" class="selected-description">连接机器人后选择模式</div>
+            <section id="launchMapLibrary" class="launch-map-library" hidden>
+              <header><div><small>MAP LIBRARY</small><strong>本次使用的地图</strong></div><button id="launchRefreshMaps" type="button">刷新列表</button></header>
+              <div class="map-name-row">
+                <label><span>地图名</span><input id="launchMapName" list="launchMapChoices" maxlength="80" autocomplete="off" placeholder="例如 building2_9"></label>
+                <datalist id="launchMapChoices"></datalist>
+                <small id="launchMapDirectory">目录：--</small>
+              </div>
+              <div id="launchMapStatus" class="launch-map-status">等待读取地图库</div>
+            </section>
+            <section id="launchParameters" class="launch-parameters" hidden>
+              <header><div><small>APP PARAMETERS</small><strong>本次启动参数</strong></div><button id="launchResetParameters" type="button">恢复默认</button></header>
+              <p>普通使用采用已经标定好的默认值；这里只显示当前流程真正需要修改的项目。</p>
+              <div id="launchParameterFields" class="launch-parameter-fields"><span>选择模式后显示可调参数</span></div>
+            </section>
+            <div class="launch-actions">
+              <button id="launchStart" class="primary-action" disabled><span>▶</span><b>启动所选模式</b></button>
+              <button id="launchStop" class="stop-action" disabled><span>■</span><b>停止当前流程</b></button>
+            </div>
+            <div id="safetyHint" class="safety-hint">启动定位后请先让雷达静止 5–10 秒完成 IMU 初始化。</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="terminalScreen" class="screen terminal-screen">
+        <div class="terminal-heading">
+          <div><small>LIVE ROS OUTPUT</small><h2>运行终端</h2><p id="terminalSubtitle">等待启动流程</p></div>
+          <div class="terminal-actions">
+            <button id="terminalToScene" type="button">查看 3D</button>
+            <button id="launchClearLogs" type="button">清空显示</button>
+            <button id="terminalStop" class="danger" type="button" disabled>停止流程</button>
+          </div>
+        </div>
+        <div class="terminal-window">
+          <header><i></i><i></i><i></i><span id="terminalCommand">planner@robot: ros2 launch …</span><em id="launchLogCount">0 行</em></header>
+          <pre id="launchLog" tabindex="0"><span class="terminal-wait">等待 Launch 输出…</span></pre>
+        </div>
+        <div class="terminal-footer"><span id="terminalPid">PID --</span><span>输出自动跟随 · 最多保留 1200 行</span><span id="terminalExit">exit --</span></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="scene3d.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
