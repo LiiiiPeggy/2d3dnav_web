@@ -23,7 +23,7 @@ App 已经针对 Mid-360S + FAST-LIO + SCAN-Planner 实机流程重构为三个�
 ## 构建与安装
 
 ```bash
-cd /home/w/scanplanner_wab/src/nav2_android
+cd /home/u/scanplanner_wab/src/nav2_android
 source ./android-env.sh
 ./gradlew :nav2-app:spotlessApply :nav2-app:testDebugUnitTest :nav2-app:assembleDebug
 adb install -r nav2-app/build/outputs/planner/planner.apk
@@ -32,7 +32,7 @@ adb install -r nav2-app/build/outputs/planner/planner.apk
 生成文件：
 
 ```text
-/home/w/scanplanner_wab/src/nav2_android/nav2-app/build/outputs/planner/planner.apk
+/home/u/scanplanner_wab/src/nav2_android/nav2-app/build/outputs/planner/planner.apk
 ```
 
 ## 只用手机启动
@@ -40,7 +40,7 @@ adb install -r nav2-app/build/outputs/planner/planner.apk
 首次安装时先在电脑上安装用户服务：
 
 ```bash
-cd /home/w/scanplanner_wab
+cd /home/u/scanplanner_wab
 sudo loginctl enable-linger "$USER"
 ./deployment/install_planner_app_user_service.bash
 ```
@@ -55,7 +55,7 @@ systemctl --user restart planner-app.service
 journalctl --user -u planner-app.service -f
 ```
 
-若 Livox 工作空间不在默认的 `/home/w/ws_livox`，安装服务前为
+若 Livox 工作空间不在默认的 `/home/u/ws_livox`，安装服务前为
 `PLANNER_LIVOX_SETUP` 设置它的 `install/setup.bash` 路径。
 
 连接后，在 App 的“系统启动”中选择模式。每次只允许一个受管流程：
@@ -77,7 +77,7 @@ journalctl --user -u planner-app.service -f
 
 `FAST-LIO 全局 PCD 建图`运行时，普通停止按钮会自动显示为“保存地图并停止”。点击后
 App 先调用 FAST-LIO `/map_save`，等待服务返回成功并确认所选的
-`/home/w/scanplanner_maps/地图名.pcd` 是非空文件，然后才停止建图。若保存失败，建图
+`/home/u/scanplanner_maps/地图名.pcd` 是非空文件，然后才停止建图。若保存失败，建图
 保持运行，手机会显示失败原因，可以排除问题后再次点击；不要在保存过程中关闭常驻 Web。
 
 三种 `navi_mode` 的输入分别是：模式 1 的 `/move_base_simple/goal`、模式 2 参数文件中的
@@ -104,7 +104,7 @@ PCT 启动后发布绿色 `/pct/traversable` 可通行点云。App 的“点云�
 启动流程时传入，不需要再到终端手写。
 
 地图相关模式会显示“本次使用的地图”。App 自动扫描机器人端安全目录
-`/home/w/scanplanner_maps`，按同名规则配对 `名字.pcd` 与 `名字.pickle`。可以从列表选择
+`/home/u/scanplanner_maps`，按同名规则配对 `名字.pcd` 与 `名字.pickle`。可以从列表选择
 已有地图；FAST-LIO 建图入口也可以直接输入一个新的地图名。App 不接受任意绝对路径，
 因此不能越过安全目录读取机器人上的其他文件。
 

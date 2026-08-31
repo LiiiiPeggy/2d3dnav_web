@@ -23,12 +23,18 @@ SCAN-Planner（局部避障 / 实机控制）的操作说明。
 
 ## 前置条件
 
-- Ubuntu 22.04 + ROS 2 Humble
+- Ubuntu 22.04 + ROS 2 Humble，并安装以下依赖：
+
+  ```bash
+  sudo apt install ros-humble-nav2-msgs ros-humble-pcl-ros
+  ```
+
 - Livox Mid-360S 及 `livox_ros_driver2` 工作区
-- 电脑与手机位于同一可信局域网
+- 两根网线：一根连接笔记本与 Mid-360S，一根连接笔记本与机器狗
+- 笔记本开启热点，电脑与手机位于同一可信局域网（手机/遥控器连接笔记本热点）
 - 电脑与机器狗底层使用相同的 `ROS_DOMAIN_ID`
 - 机器狗底层订阅 `/cmd_vel`，消息类型为 `geometry_msgs/msg/Twist`
-- 默认地图库：`/home/w/scanplanner_maps`
+- 默认地图库：`/home/u/scanplanner_maps`
 - 数据流：
 
 ```text
@@ -39,15 +45,15 @@ Mid-360S → FAST-LIO → PCT 全局路径 → SCAN-Planner 局部避障 → /cm
 
 ```bash
 source /opt/ros/humble/setup.bash
-source /home/w/ws_livox/install/setup.bash
+source /home/u/ws_livox/install/setup.bash
 
-cd /home/w/scanplanner_wab
+cd /home/u/scanplanner_wab
 rosdep install --from-paths src --ignore-src -r -y
 
 # 第一次使用 PCT 时编译第三方库
 cd src/PCT_planner && ./build_3rdparty.sh
 
-cd /home/w/scanplanner_wab
+cd /home/u/scanplanner_wab
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 source install/setup.bash
 ```
@@ -58,8 +64,8 @@ source install/setup.bash
 
 ```bash
 source /opt/ros/humble/setup.bash
-source /home/w/ws_livox/install/setup.bash
-source /home/w/scanplanner_wab/install/setup.bash
+source /home/u/ws_livox/install/setup.bash
+source /home/u/scanplanner_wab/install/setup.bash
 
 export ROS_DOMAIN_ID=71          # 按机器狗实际配置修改
 export ROS_LOCALHOST_ONLY=0
@@ -140,7 +146,7 @@ ros2 launch scan_planner planner_app.launch.py \
 地图保存为：
 
 ```text
-/home/w/scanplanner_maps/building_a.pcd
+/home/u/scanplanner_maps/building_a.pcd
 ```
 
 如果保存失败，建图会继续运行。根据 App 终端提示排查后重新保存，不要直接关闭
@@ -154,7 +160,7 @@ App 常驻服务。
 终端出现 `Tomogram exported` 后停止流程，生成文件：
 
 ```text
-/home/w/scanplanner_maps/building_a.pickle
+/home/u/scanplanner_maps/building_a.pickle
 ```
 
 PCD 与 PCT 文件必须同名，App 才会识别为一套地图：

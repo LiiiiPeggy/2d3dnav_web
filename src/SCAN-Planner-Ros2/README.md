@@ -151,8 +151,8 @@ source 驱动工作空间，否则 `fast_lio` 找不到 `livox_ros_driver2`：
 
 ```bash
 source /opt/ros/humble/setup.bash
-source /home/w/ws_livox/install/setup.bash
-cd /home/w/scanplanner_wab
+source /home/u/ws_livox/install/setup.bash
+cd /home/u/scanplanner_wab
 rosdep install --from-paths src --ignore-src -r -y
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 source install/setup.bash
@@ -215,7 +215,7 @@ publish_lidar_tf=true
 - `mapping.extrinsic_T/R` 是 LiDAR 在 IMU 坐标系下的位置和姿态；
 - `common.time_offset_lidar_to_imu` 是标定后的雷达到 IMU 时间偏移；
 - 当前保持 `mapping.extrinsic_est_en: true`，与已经在同一台 Mid-360S 上验证稳定的
-  `/home/w/FAPP/src/FAST_LIO-ROS2` 一致；获得并验证最终 LiDAR--IMU 标定后，才考虑
+  `/home/u/FAPP/src/FAST_LIO-ROS2` 一致；获得并验证最终 LiDAR--IMU 标定后，才考虑
   将标定结果同时写入 FAST-LIO 和 adapter 并关闭在线估计；
 - 只有硬件时间同步确实不可用时才考虑 `common.time_sync_en: true`。
 
@@ -258,15 +258,15 @@ URDF 自己发布 `trunk -> livox_frame`，应把 `publish_lidar_tf` 的默认�
 ```bash
 # 终端 2：FAST-LIO
 source /opt/ros/humble/setup.bash
-source /home/w/ws_livox/install/setup.bash
-source /home/w/scanplanner_wab/install/setup.bash
+source /home/u/ws_livox/install/setup.bash
+source /home/u/scanplanner_wab/install/setup.bash
 ros2 launch fast_lio mapping.launch.py \
   config_file:=mid360_scanplanner.yaml world_frame:=map rviz:=false
 
 # 终端 3：只启动真机规划和输入检查，不发布运动控制
 source /opt/ros/humble/setup.bash
-source /home/w/ws_livox/install/setup.bash
-source /home/w/scanplanner_wab/install/setup.bash
+source /home/u/ws_livox/install/setup.bash
+source /home/u/scanplanner_wab/install/setup.bash
 ros2 launch scan_planner real_fastlio.launch.py \
   start_fastlio:=false enable_control:=false
 ```
@@ -327,7 +327,7 @@ ros2 launch scan_planner real_fastlio.launch.py \
 底层只需要订阅电脑发布的 `/cmd_vel`。电脑端只保留下面一个常驻入口：
 
 ```bash
-cd /home/w/scanplanner_wab
+cd /home/u/scanplanner_wab
 ./scripts/run_3dplanner_pc.bash
 ```
 

@@ -62,7 +62,7 @@ def generate_launch_description():
             'nomotion_update_service', default_value='/request_nomotion_update',
             description='AMCL no-motion update service for particle refresh'),
         DeclareLaunchArgument(
-            'map_save_directory', default_value='/home/w/dog_ws/maps',
+            'map_save_directory', default_value='/home/u/dog_ws/maps',
             description='Absolute directory for maps saved from the Web UI'),
         DeclareLaunchArgument(
             'map_frame', default_value='map', description='Global map frame'),

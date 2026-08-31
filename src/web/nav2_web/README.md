@@ -51,7 +51,7 @@
 
 ```bash
 source /opt/ros/humble/setup.bash
-source /home/w/cartographer_nav2_ws/install/setup.bash
+source /home/u/cartographer_nav2_ws/install/setup.bash
 ros2 launch dog_cartographer_nav2_bringup nav2_web_persistent.launch.py
 ```
 
@@ -66,7 +66,7 @@ ros2 launch dog_cartographer_nav2_bringup nav2_web_persistent.launch.py
 同一时间只允许一个受管 launch，启动另一个前必须先点击“停止当前
 流程”。所有受管入口都强制使用 `start_web:=False`，不会抢占长驻 Web
 Bridge 的 `8081/8891` 端口。网页不接受任意 shell 命令，地图路径也被限制在
-`/home/w/cartographer_nav2_ws/maps`。
+`/home/u/cartographer_nav2_ws/maps`。
 
 如果 Cartographer、Nav2 或雷达驱动已由其他终端启动，网页会拒绝再次
 启动，避免两套 ROS 节点和 TF 同时运行。请先安全停止原命令行流程，再从
@@ -98,7 +98,7 @@ sudo apt install ros-humble-slam-toolbox
 
 ```bash
 source /opt/ros/humble/setup.bash
-cd /home/w/jie_deamon/nav2_web_ws
+cd /home/u/jie_deamon/nav2_web_ws
 colcon build --symlink-install
 source install/setup.bash
 ```
@@ -109,8 +109,8 @@ source install/setup.bash
 
 ```bash
 source /opt/ros/humble/setup.bash
-source /home/w/dog_ws/install/setup.bash
-source /home/w/jie_deamon/nav2_web_ws/install/setup.bash
+source /home/u/dog_ws/install/setup.bash
+source /home/u/jie_deamon/nav2_web_ws/install/setup.bash
 ```
 
 首先启动 Web，Web 可在 SLAM/Nav2 切换时保持运行：
@@ -122,7 +122,7 @@ ros2 launch nav2_web nav2_web.launch.py \
   particle_topic:=/particle_cloud \
   local_costmap_topic:=/local_costmap/costmap \
   global_costmap_topic:=/global_costmap/costmap \
-  map_save_directory:=/home/w/dog_ws/maps
+  map_save_directory:=/home/u/dog_ws/maps
 ```
 
 手机和机器人处于同一局域网时访问：
@@ -142,7 +142,7 @@ http://10.10.10.186:8081
 ### 1. SLAM 建图
 
 ```bash
-export GAZEBO_MODEL_PATH=/home/w/dog_ws/src/navigation2/nav2_system_tests/models${GAZEBO_MODEL_PATH:+:$GAZEBO_MODEL_PATH}
+export GAZEBO_MODEL_PATH=/home/u/dog_ws/src/navigation2/nav2_system_tests/models${GAZEBO_MODEL_PATH:+:$GAZEBO_MODEL_PATH}
 ros2 launch nav2_bringup tb3_simulation_launch.py \
   slam:=True \
   headless:=False \
@@ -153,8 +153,8 @@ ros2 launch nav2_bringup tb3_simulation_launch.py \
 “保存地图”。默认保存为：
 
 ```text
-/home/w/dog_ws/maps/<地图名>.yaml
-/home/w/dog_ws/maps/<地图名>.pgm
+/home/u/dog_ws/maps/<地图名>.yaml
+/home/u/dog_ws/maps/<地图名>.pgm
 ```
 
 > 建图健康度是数据链路和网格稳定性的启发式评估，不等于几何精度真值。
@@ -167,7 +167,7 @@ ros2 launch nav2_bringup tb3_simulation_launch.py \
 ```bash
 ros2 launch nav2_bringup tb3_simulation_launch.py \
   slam:=False \
-  map:=/home/w/dog_ws/maps/gazebo_map.yaml \
+  map:=/home/u/dog_ws/maps/gazebo_map.yaml \
   headless:=False \
   use_rviz:=False
 ```
@@ -221,7 +221,7 @@ ros2 launch nav2_web nav2_web.launch.py \
   save_map_service:=/map_saver/save_map \
   reset_localization_service:=/reinitialize_global_localization \
   nomotion_update_service:=/request_nomotion_update \
-  map_save_directory:=/home/w/dog_ws/maps \
+  map_save_directory:=/home/u/dog_ws/maps \
   map_frame:=map \
   odom_frame:=odom \
   base_frame:=base_link

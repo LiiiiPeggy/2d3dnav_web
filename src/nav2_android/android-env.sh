@@ -7,7 +7,7 @@ NAV2_ANDROID_LOCAL_SDK="$(
 )"
 
 if [[ -z "$NAV2_ANDROID_LOCAL_SDK" || ! -d "$NAV2_ANDROID_LOCAL_SDK" ]]; then
-  NAV2_ANDROID_LOCAL_SDK="/home/w/cartographer_nav2_ws/tools/android-sdk"
+  NAV2_ANDROID_LOCAL_SDK="/home/u/cartographer_nav2_ws/tools/android-sdk"
 fi
 NAV2_ANDROID_LOCAL_JDK="$(dirname "$NAV2_ANDROID_LOCAL_SDK")/android-studio/jbr"
 

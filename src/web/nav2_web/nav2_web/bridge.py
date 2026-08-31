@@ -118,7 +118,7 @@ class Nav2WebBridge(Node):
             'reset_localization_service', '/reinitialize_global_localization')
         self.declare_parameter(
             'nomotion_update_service', '/request_nomotion_update')
-        self.declare_parameter('map_save_directory', '/home/w/dog_ws/maps')
+        self.declare_parameter('map_save_directory', '/home/u/dog_ws/maps')
         self.declare_parameter('map_frame', 'map')
         self.declare_parameter('odom_frame', 'odom')
         self.declare_parameter('base_frame', 'base_link')
